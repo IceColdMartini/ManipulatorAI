@@ -335,7 +335,7 @@ graph TD
     
     D --> G[🔍 keyRetriever]
     G --> H[🎯 tagMatcher]
-    H --> I[📋 Product ID(s)]
+    H --> I[📋 Product IDs]
     I --> F
     
     F --> J[💬 AI Conversation]
