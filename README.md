@@ -808,7 +808,7 @@ async def qualify_lead(conversation_id: str):
 
 <div align="center">
   <p>
-    <sub>Built with ❤️ for the future of AI-powered customer engagement</sub>
+    <sub>Built with ❤️ by Kazi Fahim Tahmid for the future of AI-powered customer engagement</sub>
   </p>
   
   <p>
