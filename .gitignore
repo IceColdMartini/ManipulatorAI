@@ -1,0 +1,10 @@
+# Ignore sensitive files and Python artifacts
+.env
+*.pyc
+__pycache__/
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+*.log
