@@ -15,20 +15,21 @@ Features:
 - Thread-safe logging operations
 """
 
-import json
 import logging
 import logging.handlers
 import sys
 import time
 import uuid
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, cast
 
 import structlog
 from pythonjsonlogger import jsonlogger
+from structlog._generic import BoundLogger
 
 from .config import get_settings
 
@@ -39,63 +40,65 @@ settings = get_settings()
 class CorrelationIdFilter(logging.Filter):
     """
     Logging filter that adds correlation IDs to log records.
-    
+
     This ensures every log entry can be traced back to its originating request,
     which is crucial for debugging in distributed systems.
     """
-    
+
     def filter(self, record: logging.LogRecord) -> bool:
         """Add correlation ID to log record if not already present."""
-        if not hasattr(record, 'correlation_id'):
-            record.correlation_id = getattr(record, 'correlation_id', 'unknown')
+        if not hasattr(record, "correlation_id"):
+            record.correlation_id = getattr(record, "correlation_id", "unknown")
         return True
 
 
 class CustomJsonFormatter(jsonlogger.JsonFormatter):
     """
     Custom JSON formatter that adds ManipulatorAI-specific fields.
-    
+
     This formatter ensures all logs have consistent structure and
     include essential metadata for monitoring and debugging.
     """
-    
-    def add_fields(self, log_record: Dict[str, Any], record: logging.LogRecord, message_dict: Dict[str, Any]) -> None:
+
+    def add_fields(
+        self, log_record: dict[str, Any], record: logging.LogRecord, message_dict: dict[str, Any]
+    ) -> None:
         """Add custom fields to log record."""
         super().add_fields(log_record, record, message_dict)
-        
+
         # Add timestamp in ISO format
-        log_record['timestamp'] = datetime.utcnow().isoformat() + 'Z'
-        
+        log_record["timestamp"] = datetime.utcnow().isoformat() + "Z"
+
         # Add service metadata
-        log_record['service'] = settings.app_name
-        log_record['version'] = settings.app_version
-        log_record['environment'] = settings.environment
-        
+        log_record["service"] = settings.app_name
+        log_record["version"] = settings.app_version
+        log_record["environment"] = settings.environment
+
         # Add correlation ID if available
-        if hasattr(record, 'correlation_id'):
-            log_record['correlation_id'] = record.correlation_id
-        
+        if hasattr(record, "correlation_id"):
+            log_record["correlation_id"] = record.correlation_id
+
         # Add request ID if available
-        if hasattr(record, 'request_id'):
-            log_record['request_id'] = record.request_id
-            
+        if hasattr(record, "request_id"):
+            log_record["request_id"] = record.request_id
+
         # Add user ID if available (for user-specific tracking)
-        if hasattr(record, 'user_id'):
-            log_record['user_id'] = record.user_id
-            
+        if hasattr(record, "user_id"):
+            log_record["user_id"] = record.user_id
+
         # Add performance metrics if available
-        if hasattr(record, 'duration'):
-            log_record['duration_ms'] = record.duration
-            
+        if hasattr(record, "duration"):
+            log_record["duration_ms"] = record.duration
+
         # Add business context if available
-        if hasattr(record, 'business_context'):
-            log_record['business_context'] = record.business_context
+        if hasattr(record, "business_context"):
+            log_record["business_context"] = record.business_context
 
 
 def setup_logging() -> None:
     """
     Configure structured logging for the application.
-    
+
     This function sets up both standard library logging and structlog
     for consistent, production-ready log output. It configures:
     - Console output for development
@@ -106,50 +109,49 @@ def setup_logging() -> None:
     # Ensure log directory exists
     log_path = Path(settings.log_file_path)
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     # Configure root logger
     root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, settings.log_level))
-    
+
     # Remove any existing handlers to avoid duplicates
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
-    
+
     # Create correlation ID filter
     correlation_filter = CorrelationIdFilter()
-    
+
     # Configure formatters based on environment
     if settings.log_format.lower() == "json":
-        formatter = CustomJsonFormatter(
-            fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
+        formatter: CustomJsonFormatter | logging.Formatter = CustomJsonFormatter(
+            fmt="%(asctime)s %(name)s %(levelname)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
         )
     else:
         # Human-readable format for development
         formatter = logging.Formatter(
             fmt="%(asctime)s - %(name)s - %(levelname)s - [%(correlation_id)s] - %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
-    
+
     # Console handler for real-time monitoring
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
     console_handler.setLevel(getattr(logging, settings.log_level))
     console_handler.addFilter(correlation_filter)
     root_logger.addHandler(console_handler)
-    
+
     # File handler with rotation for persistent storage
     file_handler = logging.handlers.RotatingFileHandler(
         filename=settings.log_file_path,
         maxBytes=settings.log_max_size,
         backupCount=settings.log_backup_count,
-        encoding="utf-8"
+        encoding="utf-8",
     )
     file_handler.setFormatter(formatter)
     file_handler.setLevel(getattr(logging, settings.log_level))
     file_handler.addFilter(correlation_filter)
     root_logger.addHandler(file_handler)
-    
+
     # Configure structlog for enhanced structured logging
     structlog.configure(
         processors=[
@@ -161,15 +163,18 @@ def setup_logging() -> None:
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
-            structlog.processors.JSONRenderer() if settings.log_format.lower() == "json"
-            else structlog.dev.ConsoleRenderer(colors=settings.is_development),
+            (
+                structlog.processors.JSONRenderer()
+                if settings.log_format.lower() == "json"
+                else structlog.dev.ConsoleRenderer(colors=settings.is_development)
+            ),
         ],
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),
         wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
-    
+
     # Log successful setup
     logger = get_logger(__name__)
     logger.info(
@@ -177,33 +182,33 @@ def setup_logging() -> None:
         log_level=settings.log_level,
         log_format=settings.log_format,
         log_file=settings.log_file_path,
-        environment=settings.environment
+        environment=settings.environment,
     )
 
 
-def get_logger(name: str = None) -> structlog.stdlib.BoundLogger:
+def get_logger(name: str | None = None) -> BoundLogger:
     """
     Get a configured logger instance with structured logging capabilities.
-    
+
     Args:
         name: Logger name, defaults to calling module name
-        
+
     Returns:
         Configured structlog logger instance with bound context
     """
-    return structlog.get_logger(name)
+    return cast("BoundLogger", structlog.get_logger(name))
 
 
 class LoggerMixin:
     """
     Mixin class to add logging capabilities to any class.
-    
+
     This provides a convenient way to add logging to service classes
     without having to manually create logger instances.
     """
-    
+
     @property
-    def logger(self) -> structlog.stdlib.BoundLogger:
+    def logger(self) -> BoundLogger:
         """Get logger instance bound to this class."""
         return get_logger(self.__class__.__name__)
 
@@ -211,7 +216,7 @@ class LoggerMixin:
 def generate_correlation_id() -> str:
     """
     Generate a unique correlation ID for request tracking.
-    
+
     Returns:
         UUID string for correlation tracking
     """
@@ -219,77 +224,77 @@ def generate_correlation_id() -> str:
 
 
 @contextmanager
-def correlation_context(correlation_id: str = None):
+def correlation_context(correlation_id: str | None = None) -> Iterator[str]:
     """
     Context manager for correlation ID tracking.
-    
+
     Args:
         correlation_id: Optional correlation ID, generates new one if not provided
-        
+
     Usage:
         with correlation_context("req-123") as ctx:
             logger.info("Processing request", user_id=123)
     """
     if correlation_id is None:
         correlation_id = generate_correlation_id()
-    
+
     # Add correlation ID to all loggers in this context
-    logger = get_logger()
-    bound_logger = logger.bind(correlation_id=correlation_id)
-    
     try:
         yield correlation_id
     finally:
         pass
 
 
-def log_function_call(include_args: bool = True, include_result: bool = False):
+def log_function_call(
+    include_args: bool = True, include_result: bool = False
+) -> Callable[..., Any]:
     """
     Decorator to automatically log function calls with arguments and results.
-    
+
     Args:
         include_args: Whether to log function arguments
         include_result: Whether to log function return value
-        
+
     Usage:
         @log_function_call(include_args=True, include_result=True)
         def process_user_data(user_id: int, data: dict):
             return processed_data
     """
-    def decorator(func):
+
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             logger = get_logger(func.__module__)
             func_name = f"{func.__module__}.{func.__name__}"
-            
+
             # Log function entry
-            log_data = {"event": "function_entry", "function": func_name}
+            log_data: dict[str, Any] = {"event": "function_entry", "function": func_name}
             if include_args:
-                log_data["args"] = args
-                log_data["kwargs"] = kwargs
-            
+                log_data["args"] = str(args)  # Convert to string for JSON serialization
+                log_data["kwargs"] = str(kwargs)  # Convert to string for JSON serialization
+
             logger.info("Function called", **log_data)
-            
+
             start_time = time.time()
             try:
                 result = func(*args, **kwargs)
                 duration = (time.time() - start_time) * 1000  # Convert to milliseconds
-                
+
                 # Log successful completion
                 log_data = {
                     "event": "function_success",
                     "function": func_name,
-                    "duration_ms": duration
+                    "duration_ms": str(duration),  # Convert to string for JSON serialization
                 }
                 if include_result:
-                    log_data["result"] = result
-                
+                    log_data["result"] = str(result)  # Convert to string for JSON serialization
+
                 logger.info("Function completed successfully", **log_data)
                 return result
-                
+
             except Exception as e:
                 duration = (time.time() - start_time) * 1000
-                
+
                 # Log error with context
                 logger.error(
                     "Function failed",
@@ -297,38 +302,40 @@ def log_function_call(include_args: bool = True, include_result: bool = False):
                     function=func_name,
                     error_type=e.__class__.__name__,
                     error_message=str(e),
-                    duration_ms=duration,
-                    exc_info=True
+                    duration_ms=str(duration),
+                    exc_info=True,
                 )
                 raise
-                
+
         return wrapper
+
     return decorator
 
 
-def log_performance(operation: str, threshold_ms: float = 1000.0):
+def log_performance(operation: str, threshold_ms: float = 1000.0) -> Callable[..., Any]:
     """
     Decorator to log performance metrics for operations.
-    
+
     Args:
         operation: Name of the operation being measured
         threshold_ms: Log warning if operation takes longer than this (milliseconds)
-        
+
     Usage:
         @log_performance("database_query", threshold_ms=500)
         def get_user_data(user_id: int):
             return db.query(...)
     """
-    def decorator(func):
+
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             logger = get_logger(func.__module__)
             start_time = time.time()
-            
+
             try:
                 result = func(*args, **kwargs)
                 duration = (time.time() - start_time) * 1000
-                
+
                 # Log performance metrics
                 log_level = "warning" if duration > threshold_ms else "info"
                 getattr(logger, log_level)(
@@ -337,11 +344,11 @@ def log_performance(operation: str, threshold_ms: float = 1000.0):
                     operation=operation,
                     duration_ms=duration,
                     threshold_ms=threshold_ms,
-                    exceeded_threshold=duration > threshold_ms
+                    exceeded_threshold=duration > threshold_ms,
                 )
-                
+
                 return result
-                
+
             except Exception as e:
                 duration = (time.time() - start_time) * 1000
                 logger.error(
@@ -351,23 +358,26 @@ def log_performance(operation: str, threshold_ms: float = 1000.0):
                     duration_ms=duration,
                     error_type=e.__class__.__name__,
                     error_message=str(e),
-                    exc_info=True
+                    exc_info=True,
                 )
                 raise
-                
+
         return wrapper
+
     return decorator
 
 
-def log_error(error: Exception, context: Dict[str, Any] = None, user_id: str = None) -> Dict[str, Any]:
+def log_error(
+    error: Exception, context: dict[str, Any] | None = None, user_id: str | None = None
+) -> dict[str, Any]:
     """
     Log an error with rich context information.
-    
+
     Args:
         error: Exception that occurred
         context: Additional context about the error
         user_id: User ID if the error is user-specific
-        
+
     Returns:
         Dictionary containing error details for further processing
     """
@@ -379,24 +389,24 @@ def log_error(error: Exception, context: Dict[str, Any] = None, user_id: str = N
         "environment": settings.environment,
         "context": context or {},
     }
-    
+
     if user_id:
         error_data["user_id"] = user_id
-    
+
     logger = get_logger()
     logger.error("Error occurred", **error_data, exc_info=True)
-    
+
     return error_data
 
 
-def log_business_event(event_type: str, **kwargs) -> None:
+def log_business_event(event_type: str, **kwargs: Any) -> None:
     """
     Log business-specific events for analytics and monitoring.
-    
+
     Args:
         event_type: Type of business event (e.g., "user_registration", "purchase")
         **kwargs: Additional event data
-        
+
     Usage:
         log_business_event("conversation_started", user_id=123, product_id=456)
     """
@@ -406,19 +416,19 @@ def log_business_event(event_type: str, **kwargs) -> None:
         event="business_event",
         event_type=event_type,
         service=settings.app_name,
-        **kwargs
+        **kwargs,
     )
 
 
-def log_security_event(event_type: str, severity: str = "info", **kwargs) -> None:
+def log_security_event(event_type: str, severity: str = "info", **kwargs: Any) -> None:
     """
     Log security-related events for monitoring and compliance.
-    
+
     Args:
         event_type: Type of security event (e.g., "login_failed", "api_key_used")
         severity: Event severity ("info", "warning", "error", "critical")
         **kwargs: Additional event data
-        
+
     Usage:
         log_security_event("webhook_verification_failed", severity="warning", ip="1.2.3.4")
     """
@@ -429,7 +439,7 @@ def log_security_event(event_type: str, severity: str = "info", **kwargs) -> Non
         event_type=event_type,
         severity=severity,
         service=settings.app_name,
-        **kwargs
+        **kwargs,
     )
 
 
