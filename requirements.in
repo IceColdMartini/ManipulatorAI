@@ -1,0 +1,21 @@
+# Use this file to specify your project's dependencies.
+# Then, run 'pip-compile requirements.in' to generate the requirements.txt file.
+
+# Core web framework
+fastapi
+uvicorn[standard]
+
+# Pydantic for settings management
+pydantic
+pydantic-settings
+
+# Database drivers
+asyncpg
+motor
+
+# Task queue
+celery
+redis
+
+# For compiling requirements
+pip-tools
