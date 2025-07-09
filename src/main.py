@@ -83,17 +83,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         user_agent = request.headers.get("user-agent", "unknown")
         
         # Log incoming request
-        logger.info(
-            "Incoming request",
-            method=request.method,
-            url=str(request.url),
-            path=request.url.path,
-            query_params=dict(request.query_params),
-            client_ip=client_ip,
-            user_agent=user_agent,
-            correlation_id=correlation_id,
-            event="request_start"
-        )
+        logger.info(f"Incoming request: {request.method} {request.url.path} - {correlation_id}")
         
         try:
             # Process request
@@ -101,17 +91,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             duration_ms = (time.time() - start_time) * 1000
             
             # Log successful response
-            logger.info(
-                "Request completed successfully",
-                method=request.method,
-                url=str(request.url),
-                path=request.url.path,
-                status_code=response.status_code,
-                duration_ms=duration_ms,
-                client_ip=client_ip,
-                correlation_id=correlation_id,
-                event="request_success"
-            )
+            logger.info(f"Request completed: {request.method} {request.url.path} - {response.status_code} - {duration_ms:.2f}ms")
             
             # Add performance headers
             response.headers["X-Response-Time"] = f"{duration_ms:.2f}ms"
@@ -122,19 +102,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             duration_ms = (time.time() - start_time) * 1000
             
             # Log request error
-            logger.error(
-                "Request failed with exception",
-                method=request.method,
-                url=str(request.url),
-                path=request.url.path,
-                duration_ms=duration_ms,
-                client_ip=client_ip,
-                correlation_id=correlation_id,
-                error_type=e.__class__.__name__,
-                error_message=str(e),
-                event="request_error",
-                exc_info=True
-            )
+            logger.error(f"Request failed: {request.method} {request.url.path} - {e.__class__.__name__}: {str(e)}")
             
             # Re-raise to be handled by global exception handler
             raise
@@ -149,13 +117,7 @@ async def lifespan(app: FastAPI):
     connections, Redis connections, and background tasks in a production-ready manner.
     """
     # Startup
-    logger.info(
-        "Starting ManipulatorAI application",
-        version=settings.app_version,
-        environment=settings.environment,
-        debug=settings.debug,
-        event="application_startup"
-    )
+    logger.info(f"Starting ManipulatorAI application - Version: {settings.app_version}, Environment: {settings.environment}")
     
     startup_start = time.time()
     
@@ -175,28 +137,17 @@ async def lifespan(app: FastAPI):
         # await validate_azure_openai_connection()
         
         startup_duration = (time.time() - startup_start) * 1000
-        logger.info(
-            "Application startup completed successfully",
-            startup_duration_ms=startup_duration,
-            event="application_ready"
-        )
+        logger.info(f"Application startup completed successfully in {startup_duration:.2f}ms")
         
     except Exception as e:
         startup_duration = (time.time() - startup_start) * 1000
-        logger.error(
-            "Application startup failed",
-            startup_duration_ms=startup_duration,
-            error_type=e.__class__.__name__,
-            error_message=str(e),
-            event="application_startup_failed",
-            exc_info=True
-        )
+        logger.error(f"Application startup failed after {startup_duration:.2f}ms: {e.__class__.__name__}: {str(e)}")
         raise
     
     yield
     
     # Shutdown
-    logger.info("Shutting down ManipulatorAI application", event="application_shutdown")
+    logger.info("Shutting down ManipulatorAI application")
     
     shutdown_start = time.time()
     
@@ -212,22 +163,11 @@ async def lifespan(app: FastAPI):
         # await stop_celery_workers()
         
         shutdown_duration = (time.time() - shutdown_start) * 1000
-        logger.info(
-            "Application shutdown completed successfully",
-            shutdown_duration_ms=shutdown_duration,
-            event="application_stopped"
-        )
+        logger.info(f"Application shutdown completed successfully in {shutdown_duration:.2f}ms")
         
     except Exception as e:
         shutdown_duration = (time.time() - shutdown_start) * 1000
-        logger.error(
-            "Application shutdown encountered errors",
-            shutdown_duration_ms=shutdown_duration,
-            error_type=e.__class__.__name__,
-            error_message=str(e),
-            event="application_shutdown_error",
-            exc_info=True
-        )
+        logger.error(f"Application shutdown encountered errors after {shutdown_duration:.2f}ms: {e.__class__.__name__}: {str(e)}")
 
 
 def create_application() -> FastAPI:
@@ -298,15 +238,7 @@ def create_application() -> FastAPI:
         """Handle HTTP exceptions with proper logging."""
         correlation_id = getattr(request.state, 'correlation_id', 'unknown')
         
-        logger.warning(
-            "HTTP exception occurred",
-            status_code=exc.status_code,
-            detail=exc.detail,
-            method=request.method,
-            url=str(request.url),
-            correlation_id=correlation_id,
-            event="http_exception"
-        )
+        logger.warning(f"HTTP exception: {exc.status_code} - {exc.detail} - {request.method} {request.url.path}")
         
         return JSONResponse(
             status_code=exc.status_code,
@@ -324,14 +256,7 @@ def create_application() -> FastAPI:
         """Handle request validation errors with detailed logging."""
         correlation_id = getattr(request.state, 'correlation_id', 'unknown')
         
-        logger.warning(
-            "Request validation failed",
-            errors=exc.errors(),
-            method=request.method,
-            url=str(request.url),
-            correlation_id=correlation_id,
-            event="validation_error"
-        )
+        logger.warning(f"Request validation failed: {request.method} {request.url.path} - {len(exc.errors())} errors")
         
         return JSONResponse(
             status_code=422,
@@ -349,16 +274,7 @@ def create_application() -> FastAPI:
         """Handle all unhandled exceptions with comprehensive logging."""
         correlation_id = getattr(request.state, 'correlation_id', 'unknown')
         
-        logger.error(
-            "Unhandled exception occurred",
-            error_type=exc.__class__.__name__,
-            error_message=str(exc),
-            method=request.method,
-            url=str(request.url),
-            correlation_id=correlation_id,
-            event="unhandled_exception",
-            exc_info=True
-        )
+        logger.error(f"Unhandled exception: {exc.__class__.__name__}: {str(exc)} - {request.method} {request.url.path}")
         
         # Return different responses based on environment
         if settings.is_development:
@@ -462,14 +378,7 @@ def create_application() -> FastAPI:
     # TODO: Include API routers
     # app.include_router(api_router, prefix="/api/v1")
     
-    logger.info(
-        "FastAPI application created successfully",
-        app_name=settings.app_name,
-        version=settings.app_version,
-        environment=settings.environment,
-        debug=settings.debug,
-        event="application_created"
-    )
+    logger.info(f"FastAPI application created successfully - {settings.app_name} v{settings.app_version} ({settings.environment})")
     
     return app
 
@@ -485,14 +394,7 @@ def main():
     This function is called when the module is executed directly
     and provides production-ready server configuration.
     """
-    logger.info(
-        "Starting ManipulatorAI server",
-        host=settings.host,
-        port=settings.port,
-        workers=settings.workers,
-        environment=settings.environment,
-        event="server_start"
-    )
+    logger.info(f"Starting ManipulatorAI server - {settings.host}:{settings.port} ({settings.environment})")
     
     uvicorn.run(
         "src.main:app",

@@ -10,7 +10,7 @@ import os
 from functools import lru_cache
 from typing import List, Optional, Union
 
-from pydantic import Field, validator, root_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -145,7 +145,8 @@ class Settings(BaseSettings):
     # =============================================================================
     # VALIDATION METHODS
     # =============================================================================
-    @validator("environment")
+    @field_validator("environment")
+    @classmethod
     def validate_environment(cls, v):
         """Validate environment is one of accepted values."""
         allowed_envs = ["development", "testing", "staging", "production"]
@@ -153,7 +154,8 @@ class Settings(BaseSettings):
             raise ValueError(f"Environment must be one of {allowed_envs}")
         return v.lower()
     
-    @validator("log_level")
+    @field_validator("log_level")
+    @classmethod
     def validate_log_level(cls, v):
         """Validate log level is acceptable."""
         allowed_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -161,28 +163,32 @@ class Settings(BaseSettings):
             raise ValueError(f"Log level must be one of {allowed_levels}")
         return v.upper()
     
-    @validator("correlation_threshold")
+    @field_validator("correlation_threshold")
+    @classmethod
     def validate_correlation_threshold(cls, v):
         """Ensure correlation threshold is between 0 and 1."""
         if not 0 <= v <= 1:
             raise ValueError("Correlation threshold must be between 0 and 1")
         return v
     
-    @validator("openai_temperature")
+    @field_validator("openai_temperature")
+    @classmethod
     def validate_openai_temperature(cls, v):
         """Ensure OpenAI temperature is within valid range."""
         if not 0 <= v <= 2:
             raise ValueError("OpenAI temperature must be between 0 and 2")
         return v
     
-    @validator("port")
+    @field_validator("port")
+    @classmethod
     def validate_port(cls, v):
         """Ensure port is within valid range."""
         if not 1 <= v <= 65535:
             raise ValueError("Port must be between 1 and 65535")
         return v
     
-    @validator("azure_openai_endpoint")
+    @field_validator("azure_openai_endpoint")
+    @classmethod
     def validate_azure_endpoint(cls, v):
         """Ensure Azure OpenAI endpoint is properly formatted."""
         if not v.startswith("https://"):
@@ -191,13 +197,12 @@ class Settings(BaseSettings):
             raise ValueError("Azure OpenAI endpoint must end with .openai.azure.com")
         return v
     
-    @root_validator
-    def validate_secret_key_length(cls, values):
+    @model_validator(mode='after')
+    def validate_secret_key_length(self):
         """Ensure secret key is sufficiently long for security."""
-        secret_key = values.get("secret_key")
-        if secret_key and len(secret_key) < 32:
+        if self.secret_key and len(self.secret_key) < 32:
             raise ValueError("Secret key must be at least 32 characters long")
-        return values
+        return self
     
     # =============================================================================
     # COMPUTED PROPERTIES
