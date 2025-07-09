@@ -1,0 +1,46 @@
+# Development Tools and Quality Assurance Configuration
+
+# Testing framework and plugins
+pytest>=8.4.0              # Advanced testing framework with fixtures and plugins
+pytest-asyncio>=1.0.0      # Async/await support for pytest
+pytest-cov>=6.2.0          # Code coverage reporting for tests
+pytest-mock>=3.14.0        # Enhanced mocking capabilities
+pytest-xdist>=3.6.0        # Parallel test execution
+
+# Code formatting and linting
+black>=25.1.0               # Uncompromising code formatter
+ruff>=0.12.2                # Extremely fast Python linter and formatter
+mypy>=1.10.0                # Static type checking
+isort>=5.13.0               # Import sorting
+bandit>=1.7.8               # Security linting
+
+# Pre-commit hooks and git hooks
+pre-commit>=4.2.0           # Git hooks framework
+
+# Development servers and hot reload
+watchdog>=6.0.0             # File system monitoring
+python-dotenv>=1.1.1        # Environment variable management
+
+# Documentation generation
+sphinx>=8.2.0               # Documentation generator
+sphinx-rtd-theme>=2.0.0     # Read the Docs theme
+sphinx-autodoc-typehints>=2.5.0  # Type hints in documentation
+
+# Performance profiling and monitoring
+py-spy>=0.3.14              # Sampling profiler
+memory_profiler>=0.61.0     # Memory usage profiling
+line_profiler>=4.2.0        # Line-by-line performance profiling (latest available)
+
+# Development database tools
+alembic>=1.16.3             # Database migration tool (already included)
+
+# API testing and development
+httpx>=0.28.1               # HTTP client for testing APIs (already included)
+httpie>=3.2.3               # Command-line HTTP client (avoiding yanked 3.2.0)
+
+# Jupyter notebook support (for data analysis and prototyping)
+jupyter>=1.1.1              # Jupyter notebook environment
+ipykernel>=6.29.5           # IPython kernel for Jupyter
+
+# Load testing and performance
+locust>=2.32.2              # Load testing framework

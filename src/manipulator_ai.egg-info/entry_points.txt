@@ -1,0 +1,2 @@
+[console_scripts]
+manipulatorai = src.main:main
