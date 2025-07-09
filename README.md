@@ -1,6 +1,6 @@
 <div align="center">
   <h1>🤖 ManipulatorAI</h1>
-  
+
   <p>
     <strong>Next-Generation AI Sales Agent Microservice</strong><br>
     Intelligent customer engagement through human-like conversations
@@ -12,7 +12,7 @@
   ![Redis](https://img.shields.io/badge/Redis-Queue-DC382D.svg)
   ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-336791.svg)
   ![MongoDB](https://img.shields.io/badge/MongoDB-Conversations-47A248.svg)
-  
+
   <p>
     <a href="#-features">Features</a> •
     <a href="#-architecture">Architecture</a> •
@@ -30,7 +30,7 @@
 
 ### 🎯 Mission
 
-**Primary Function**: First direct communication with potential customers  
+**Primary Function**: First direct communication with potential customers
 **Objective**: Convert prospects to qualified leads through intelligent conversation and seamless handoff to Onboarding Agent
 
 ## ✨ Features
@@ -108,29 +108,29 @@ graph TB
         A[📱 Facebook/Instagram Ads]
         B[👆 User Interactions]
     end
-    
+
     subgraph "Processing Layer"
         C[🔔 Webhooks]
         D[📊 Redis Queue]
         E[🤖 ManipulatorAI Service]
     end
-    
+
     subgraph "Intelligence Layer"
         F[🧠 Azure OpenAI]
         G[🔍 keyRetriever]
         H[🎯 tagMatcher]
     end
-    
+
     subgraph "Data Layer"
         I[🗄️ PostgreSQL<br/>Product Database]
         J[💾 MongoDB<br/>Conversations]
     end
-    
+
     subgraph "Integration Layer"
         K[🎯 Onboarding Agent]
         L[📊 Business Dashboard]
     end
-    
+
     A --> B
     B --> C
     C --> D
@@ -154,7 +154,7 @@ The agent operates seamlessly in **Facebook/Instagram** environments where busin
 
 **Supported Interactions:**
 - ❤️ **Likes** - Engagement tracking
-- 💬 **Comments** - Conversation starters  
+- 💬 **Comments** - Conversation starters
 - 👆 **Clicks** - Intent signals
 - 📩 **Direct Messages** - Immediate response
 
@@ -182,12 +182,12 @@ Leveraging **Azure OpenAI** models for natural, persuasive conversations that fe
 ```mermaid
 graph LR
     subgraph "Multi-Agent Ecosystem"
-        A[🤖 ManipulatorAI<br/>First Contact] 
+        A[🤖 ManipulatorAI<br/>First Contact]
         B[🎯 Onboarding Agent<br/>Registration]
         C[📊 Analytics Agent<br/>Insights]
         D[🛡️ Security Agent<br/>Protection]
     end
-    
+
     E[👥 Business Owners] --> F[📊 Management Dashboard]
     F --> A
     A --> B
@@ -199,7 +199,7 @@ graph LR
 
 **Ecosystem Benefits:**
 - 🤖 **Automated Consumer Attraction** - Zero human intervention required
-- 📊 **Comprehensive Platform Oversight** - Real-time business owner dashboards  
+- 📊 **Comprehensive Platform Oversight** - Real-time business owner dashboards
 - 🔄 **Intelligent Sales Process Automation** - End-to-end funnel management
 - 🎯 **Complete Engagement Funnel** - From first contact to conversion
 
@@ -248,11 +248,11 @@ azure:
 database:
   postgresql_url: "postgresql://user:pass@localhost/db"
   mongodb_url: "mongodb://localhost:27017/conversations"
-  
+
 redis:
   host: "localhost"
   port: 6379
-  
+
 webhooks:
   facebook_verify_token: "your-verify-token"
   instagram_verify_token: "your-verify-token"
@@ -329,19 +329,19 @@ graph TD
     A[📱 Customer Interaction] --> B{Interaction Type}
     B -->|User clicks/likes ad| C[🎭 Manipulator Branch]
     B -->|User sends message| D[🎯 Convincer Branch]
-    
+
     C --> E[📋 Direct Product ID]
     E --> F[🗄️ Database Query]
-    
+
     D --> G[🔍 keyRetriever]
     G --> H[🎯 tagMatcher]
     H --> I[📋 Product IDs]
     I --> F
-    
+
     F --> J[💬 AI Conversation]
     J --> K[✅ Lead Qualification]
     K --> L[🎯 Onboarding Agent]
-    
+
     style C fill:#e1f5fe
     style D fill:#f3e5f5
     style J fill:#e8f5e8
@@ -358,12 +358,12 @@ graph TD
 def manipulator_branch(interaction_data):
     product_id = extract_product_id(interaction_data)
     product_info = database.get_product(product_id)
-    
+
     conversation = initiate_conversation(
         interaction_type="proactive",
         product_context=product_info
     )
-    
+
     return conversation
 ```
 
@@ -384,13 +384,13 @@ def convincer_branch(customer_message):
         message=customer_message,
         business_context=get_business_summary()
     )
-    
+
     # Step 2: Match products
     product_matches = tagMatcher(
         keywords=keywords,
         correlation_threshold=0.8
     )
-    
+
     return product_matches
 ```
 
@@ -405,28 +405,28 @@ def convincer_branch(customer_message):
 def keyRetriever(message: str, business_context: str) -> List[str]:
     """
     Extract relevant keywords from customer message using LLM
-    
+
     Args:
         message: Customer's text input
         business_context: Summary of business products/services
-        
+
     Returns:
         List of extracted keywords related to business offerings
     """
     prompt = f"""
     Business Context: {business_context}
     Customer Message: {message}
-    
+
     Extract keywords that relate to our business offerings.
     Focus on product-related terms, intents, and interests.
     """
-    
+
     return llm_extract_keywords(prompt)
 ```
 
 **Input/Output Flow:**
 - 📥 **Input**: Customer message + Business product summary
-- ⚙️ **Process**: LLM-powered topic selection and keyword identification  
+- ⚙️ **Process**: LLM-powered topic selection and keyword identification
 - 📤 **Output**: Relevant keywords related to business products
 
 </details>
@@ -440,15 +440,15 @@ def keyRetriever(message: str, business_context: str) -> List[str]:
 def tagMatcher(keywords: List[str], threshold: float = 0.8) -> List[str]:
     """
     Match keywords with product tags using correlation scoring
-    
+
     Args:
         keywords: Extracted keywords from customer message
         threshold: Minimum correlation score (default: 0.8)
-        
+
     Returns:
         List of matched product IDs with high correlation
     """
-    
+
     matches = []
     for product in database.get_all_products():
         correlation = calculate_similarity(keywords, product.tags)
@@ -457,7 +457,7 @@ def tagMatcher(keywords: List[str], threshold: float = 0.8) -> List[str]:
                 'product_id': product.id,
                 'score': correlation
             })
-    
+
     return sorted(matches, key=lambda x: x['score'], reverse=True)
 ```
 
@@ -482,7 +482,7 @@ graph LR
 
 **Setup Process:**
 1. 🎯 **Product Identification** - Via appropriate branch workflow
-2. 🗄️ **Database Query** - Fetch product_description(s) 
+2. 🗄️ **Database Query** - Fetch product_description(s)
 3. 📝 **Context Preparation** - Prepare conversation context for LLM
 
 ### 🎨 **Prompt Engineering Strategy**
@@ -495,24 +495,24 @@ def generate_welcome_prompt(product_info: dict, interaction_type: str) -> str:
     """
     Generate personalized welcome message based on product context
     """
-    
+
     template = """
     You are a friendly sales representative for {business_name}.
-    
+
     Context:
     - Customer showed interest in: {product_genre}
     - Interaction type: {interaction_type}
     - Products to focus on: {product_list}
-    
+
     Guidelines:
     - Start with a warm, human-like greeting
     - Reference their specific interest
     - Offer assistance in a natural way
     - Keep it conversational, not salesy
-    
+
     Generate a welcoming message that feels genuine and helpful.
     """
-    
+
     return template.format(
         business_name=get_business_name(),
         product_genre=summarize_product_genre(product_info),
@@ -538,14 +538,14 @@ conversation_strategy:
   tone: "polite_persuasive"
   persistence_level: "moderate"
   product_focus: "primary_then_cross_sell"
-  
+
   guidelines:
     - custom_tailored_responses: true
     - polite_yet_persuasive: true
     - persistence_with_uninterested: true
     - cross_product_recommendations: true
     - graceful_conclusion: true
-    
+
   thresholds:
     cross_product_correlation: 0.75
     max_persistence_attempts: 3
@@ -555,7 +555,7 @@ conversation_strategy:
 **Key Strategies:**
 - 🎯 **Custom-Tailored Responses** - Specific to business products
 - 🤝 **Polite Yet Persuasive** - Maintains professional communication
-- 💪 **Strategic Persistence** - Gentle follow-up with uninterested customers  
+- 💪 **Strategic Persistence** - Gentle follow-up with uninterested customers
 - 🛍️ **Cross-Product Recommendations** - 70-80% correlation threshold
 - 🙏 **Graceful Conclusion** - Professional conversation ending with future engagement invitation
 
@@ -571,7 +571,7 @@ graph TB
         C[🎯 User Context]
         D[📊 Conversation Analytics]
     end
-    
+
     subgraph "Data Flow"
         E[🔄 Real-time Updates] --> A
         A --> F[🧠 LLM Context Feed]
@@ -591,7 +591,7 @@ graph TB
 // Example conversation document structure
 {
   "_id": "conversation_uuid",
-  "customer_id": "customer_uuid", 
+  "customer_id": "customer_uuid",
   "business_id": "business_uuid",
   "product_context": ["product_id_1", "product_id_2"],
   "conversation_branch": "manipulator", // or "convincer"
@@ -603,7 +603,7 @@ graph TB
       "intent": "welcome"
     },
     {
-      "timestamp": "2025-07-08T10:31:00Z", 
+      "timestamp": "2025-07-08T10:31:00Z",
       "sender": "customer",
       "content": "Yes, I'm looking for a new phone",
       "sentiment": "interested"
@@ -625,36 +625,36 @@ graph TB
         A[📱 Facebook/Instagram]
         B[👥 Business Dashboard]
     end
-    
+
     subgraph "🔌 API Gateway"
         C[🔔 Webhook Endpoints]
         D[📡 REST API]
     end
-    
+
     subgraph "⚡ Processing Layer"
         E[📊 Redis Queue]
         F[🤖 ManipulatorAI Service]
         G[🔍 keyRetriever]
         H[🎯 tagMatcher]
     end
-    
+
     subgraph "🧠 AI Layer"
         I[🤖 Azure OpenAI GPT-4]
         J[📝 Prompt Engineering]
         K[🎭 Conversation Engine]
     end
-    
+
     subgraph "💾 Data Layer"
         L[(🗄️ PostgreSQL<br/>Products)]
         M[(💾 MongoDB<br/>Conversations)]
         N[(⚡ Redis<br/>Cache)]
     end
-    
+
     subgraph "🔗 Integration Layer"
         O[🎯 Onboarding Agent]
         P[📊 Analytics Service]
     end
-    
+
     A --> C
     B --> D
     C --> E
@@ -672,7 +672,7 @@ graph TB
     F --> N
     F --> O
     F --> P
-    
+
     style F fill:#e3f2fd
     style I fill:#fff3e0
     style L fill:#e8f5e8
@@ -699,10 +699,10 @@ graph TB
 ```yaml
 Performance Targets:
   response_time: "<200ms"
-  throughput: "1000+ req/sec" 
+  throughput: "1000+ req/sec"
   availability: "99.9%"
   conversation_latency: "<2s"
-  
+
 Scalability:
   horizontal_scaling: true
   auto_scaling: true
@@ -718,25 +718,25 @@ Scalability:
 graph LR
     subgraph "📥 Input Sources"
         A[📱 Social Media Webhooks]
-        B[💬 Customer Messages] 
+        B[💬 Customer Messages]
         C[📊 Business Dashboard]
     end
-    
+
     subgraph "🤖 ManipulatorAI"
         D[⚡ Processing Engine]
         E[🧠 AI Conversation]
         F[📝 Lead Qualification]
     end
-    
+
     subgraph "📤 Output Destinations"
         G[🎯 Onboarding Agent]
         H[📊 Analytics Platform]
         I[💼 CRM Integration]
         J[📈 Business Intelligence]
     end
-    
+
     A --> D
-    B --> D  
+    B --> D
     C --> D
     D --> E
     E --> F
@@ -755,19 +755,19 @@ graph LR
 @app.post("/webhook/facebook")
 async def facebook_webhook(payload: FacebookWebhook):
     """Handle Facebook interaction webhooks"""
-    
-@app.post("/webhook/instagram") 
+
+@app.post("/webhook/instagram")
 async def instagram_webhook(payload: InstagramWebhook):
     """Handle Instagram interaction webhooks"""
-    
+
 @app.post("/conversation/message")
 async def process_message(message: CustomerMessage):
     """Process incoming customer messages"""
-    
+
 @app.get("/conversation/{conversation_id}")
 async def get_conversation(conversation_id: str):
     """Retrieve conversation history"""
-    
+
 @app.post("/lead/qualify")
 async def qualify_lead(conversation_id: str):
     """Mark lead as qualified and transfer to onboarding"""
@@ -810,7 +810,7 @@ async def qualify_lead(conversation_id: str):
   <p>
     <sub>Built with ❤️ by Kazi Fahim Tahmid for the future of AI-powered customer engagement</sub>
   </p>
-  
+
   <p>
     <a href="#-overview">Back to Top</a>
   </p>
