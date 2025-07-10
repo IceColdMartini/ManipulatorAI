@@ -1,5 +1,8 @@
 # Development Tools and Quality Assurance Configuration
 
+# Logging
+structlog>=24.1.0           # Structured logging for production-readiness
+
 # Testing framework and plugins
 pytest>=8.4.0              # Advanced testing framework with fixtures and plugins
 pytest-asyncio>=1.0.0      # Async/await support for pytest

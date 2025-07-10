@@ -64,15 +64,15 @@ class Settings(BaseSettings):
     # DATABASE CONFIGURATION
     # =============================================================================
     # PostgreSQL (Product Knowledge Base)
-    database_url: str | None = Field(default=None, alias="DATABASE_URL")
+    postgres_url: str | None = Field(default=None, alias="POSTGRES_URL")
     postgres_pool_size: int = Field(default=10, alias="POSTGRES_POOL_SIZE")
     postgres_max_overflow: int = Field(default=20, alias="POSTGRES_MAX_OVERFLOW")
     postgres_pool_timeout: int = Field(default=30, alias="POSTGRES_POOL_TIMEOUT")
     postgres_pool_recycle: int = Field(default=3600, alias="POSTGRES_POOL_RECYCLE")
 
     # MongoDB (Conversation Storage)
-    mongodb_url: str | None = Field(
-        default=None, description="MongoDB connection URL", alias="MONGODB_URL"
+    mongo_url: str | None = Field(
+        default=None, description="MongoDB connection URL", alias="MONGO_URL"
     )
     mongo_db_name: str = Field(
         default="manipulator_conversations",
@@ -249,7 +249,7 @@ class Settings(BaseSettings):
 
         missing_fields = []
         for field_name, env_var in required_fields.items():
-            field_value = getattr(self, field_name)
+            field_value = getattr(self, field_name, None)
             if field_value is None:
                 missing_fields.append(f"{field_name} (set {env_var} environment variable)")
 
