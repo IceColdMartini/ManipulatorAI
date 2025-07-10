@@ -44,3 +44,4 @@ ipykernel>=6.29.5           # IPython kernel for Jupyter
 
 # Load testing and performance
 locust>=2.32.2              # Load testing framework
+psycopg2-binary
